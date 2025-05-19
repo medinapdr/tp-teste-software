@@ -5,6 +5,8 @@ Este projeto consiste em um gerador de senhas desenvolvido em Python como parte 
 ## 1. Membros do Grupo
 
 * Pedro Medina
+* Fábio Marra
+* Gustavo Cunha
 
 ## 2. Explicação do Sistema
 
