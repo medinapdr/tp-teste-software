@@ -1,4 +1,11 @@
 import pytest
+import random
+import requests
+from zxcvbn import zxcvbn
+import subprocess
+import sys
+import tempfile
+import json
 from gerador_senha import (
     ConfiguracaoSenha,
     gerar_senha,
@@ -282,3 +289,79 @@ def test_efetividade_embaralhamento_indiretamente():
             break
             
     assert not sempre_inicia_com_padrao, "As senhas parecem sempre começar com o mesmo padrão de caracteres garantidos; o embaralhamento pode não estar eficaz."
+
+def test_integracao_api_seed():
+    #usa api random number para obter um inteiro x e gerar uma senha com o comprimento x
+    response = requests.get("https://www.randomnumberapi.com/api/v1.0/random?min=12&max=32&count=1")
+    assert response.status_code == 200
+
+    comprimento = response.json()[0]
+    config = ConfiguracaoSenha(
+        comprimento=comprimento,
+        incluir_minusculas=True,
+        incluir_maiusculas=True,
+        incluir_numeros=True
+    )
+    senha = gerar_senha(config)
+
+    assert len(senha) == comprimento, f"A senha deve ter {comprimento} caracteres, mas teve {len(senha)}"
+
+
+def test_integracao_zxcvbn_analise_forca():
+    #usa zxcvbn para medir se a senha gerada possui força razoavel
+    config = ConfiguracaoSenha(comprimento=20, incluir_minusculas=True, incluir_maiusculas=True, incluir_numeros=True, incluir_simbolos=True)
+    senha = gerar_senha(config)
+
+    resultado = zxcvbn(senha)
+    score = resultado['score']
+
+    assert score >= 3, f"A senha gerada deve ter uma força razoável (score >= 3). Score atual: {score}"
+
+def test_cli_integracao_argumentos():
+    #testa a integracao com argparse, i.e., passagem de parametros via linha de comando
+    comando = [
+        sys.executable, "main.py",
+        "-c", "16",
+        "--minusculas",
+        "--maiusculas",
+        "--numeros",
+        "--simbolos"
+    ]
+    resultado = subprocess.run(comando, capture_output=True, text=True)
+    
+    assert resultado.returncode == 0
+    assert "Senha Gerada:" in resultado.stdout
+    senha = resultado.stdout.strip().split(":")[-1].strip()
+    assert len(senha) == 16
+
+def test_integracao_arquivo_simbolos_personalizados():
+    #testa integracao com filesystem, fazendo leitura de um arquivo com simbolos
+    with tempfile.NamedTemporaryFile(mode='w+', delete=True) as temp_file:
+        temp_file.write("★✪♛♜")
+        temp_file.seek(0)
+        simbolos = temp_file.read()
+
+        config = ConfiguracaoSenha(comprimento=12, incluir_simbolos=True, simbolos_personalizados=simbolos)
+        senha = gerar_senha(config)
+
+        assert all(c in simbolos for c in senha)
+
+def test_integracao_configuracao_por_json():
+    #verifica integracao de parsing, validacao e geracao, atraves de especificacoes em um json
+    dados_json = """
+    {
+        "comprimento": 14,
+        "incluir_maiusculas": true,
+        "incluir_minusculas": true,
+        "incluir_numeros": false,
+        "incluir_simbolos": true,
+        "simbolos_personalizados": "#$&"
+    }
+    """
+    config_dict = json.loads(dados_json)
+    config = ConfiguracaoSenha(**config_dict)
+    senha = gerar_senha(config)
+
+    assert len(senha) == 14
+    assert all(c in (config.simbolos_personalizados + "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
+               for c in senha)
