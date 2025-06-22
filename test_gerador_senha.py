@@ -336,7 +336,7 @@ def test_cli_integracao_argumentos():
 
 def test_integracao_arquivo_simbolos_personalizados():
     #testa integracao com filesystem, fazendo leitura de um arquivo com simbolos
-    with tempfile.NamedTemporaryFile(mode='w+', delete=True) as temp_file:
+    with tempfile.NamedTemporaryFile(mode='w+', encoding='utf-8', delete=True) as temp_file:
         temp_file.write("★✪♛♜")
         temp_file.seek(0)
         simbolos = temp_file.read()
