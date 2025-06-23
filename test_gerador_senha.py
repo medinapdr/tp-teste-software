@@ -308,7 +308,7 @@ def test_integracao_api_seed():
 
 
 def test_integracao_zxcvbn_analise_forca():
-    #usa zxcvbn para medir se a senha gerada possui força razoavel
+    #usa zxcvbn para medir se a senha gerada possui força razoavel (>=3)
     config = ConfiguracaoSenha(comprimento=20, incluir_minusculas=True, incluir_maiusculas=True, incluir_numeros=True, incluir_simbolos=True)
     senha = gerar_senha(config)
 

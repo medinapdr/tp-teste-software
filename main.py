@@ -30,3 +30,4 @@ if __name__ == "__main__":
         print("Senha Gerada:", senha_gerada)
     except ValueError as e:
         print(f"Erro ao gerar senha: {e}")
+        exit(1)

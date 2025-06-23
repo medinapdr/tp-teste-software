@@ -1,6 +1,7 @@
 import secrets
 import string
 import random
+from zxcvbn import zxcvbn
 
 class ConfiguracaoSenha:
     def __init__(self,
@@ -79,4 +80,22 @@ def gerar_senha(config: ConfiguracaoSenha) -> str:
 
     random.shuffle(caracteres_senha)
 
-    return "".join(caracteres_senha)
+    caracteres_senha = list(caracteres_garantidos)
+    tentativas = 0
+    max_tentativas = 10
+
+    #tenta gerar uma senha com força minima (score >= 3) por ate 10 tentativas. se nao conseguir, retorna a ultima senha gerada
+    while tentativas < max_tentativas:
+        senha_temporaria = list(caracteres_garantidos)
+        for _ in range(comprimento_restante):
+            senha_temporaria.append(secrets.choice(conjunto_caracteres_permitidos))
+
+        random.shuffle(senha_temporaria)
+        senha_final = "".join(senha_temporaria)
+
+        resultado = zxcvbn(senha_final)
+        if resultado['score'] >= 3:
+            return senha_final
+        
+        tentativas += 1
+    return senha_final
