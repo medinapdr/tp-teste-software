@@ -6,6 +6,8 @@ import subprocess
 import sys
 import tempfile
 import json
+import xml.etree.ElementTree as ET
+
 from gerador_senha import (
     ConfiguracaoSenha,
     gerar_senha,
@@ -290,7 +292,7 @@ def test_efetividade_embaralhamento_indiretamente():
             
     assert not sempre_inicia_com_padrao, "As senhas parecem sempre começar com o mesmo padrão de caracteres garantidos; o embaralhamento pode não estar eficaz."
 
-def test_integracao_api_seed():
+def test_integracao_api_seed_comprimento():
     #usa api random number para obter um inteiro x e gerar uma senha com o comprimento x
     response = requests.get("https://www.randomnumberapi.com/api/v1.0/random?min=12&max=32&count=1")
     assert response.status_code == 200
@@ -365,3 +367,94 @@ def test_integracao_configuracao_por_json():
     assert len(senha) == 14
     assert all(c in (config.simbolos_personalizados + "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
                for c in senha)
+    
+def test_integracao_configuracao_por_xml():
+    #verifica integracao de parsing, validacao e geracao, atraves de especificacoes em um xml
+    dados_xml = """
+    <configs>
+        <comprimento>14</comprimento>
+        <incluir_maiusculas>True</incluir_maiusculas>
+        <incluir_minusculas>True</incluir_minusculas>
+        <incluir_numeros>True</incluir_numeros>
+        <incluir_simbolos>True</incluir_simbolos>
+        <simbolos_personalizados>#$&amp;</simbolos_personalizados>
+    </configs>
+    """
+    
+    tree = ET.ElementTree(ET.fromstring(dados_xml))
+    root = tree.getroot()
+    config_dict = dict()
+    config_dict["comprimento"] = int(root.find("./comprimento").text)
+    config_dict["incluir_maiusculas"] = bool(root.find("./incluir_maiusculas").text)
+    config_dict["incluir_minusculas"] = bool(root.find("./incluir_minusculas").text)
+    config_dict["incluir_numeros"] = bool(root.find("./incluir_numeros").text)
+    config_dict["incluir_simbolos"] = bool(root.find("./incluir_simbolos").text)
+    config_dict["simbolos_personalizados"] = root.find("./simbolos_personalizados").text
+    config = ConfiguracaoSenha(**config_dict)
+    senha = gerar_senha(config)
+
+    assert len(senha) == 14
+    assert all(c in (config.simbolos_personalizados + "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
+               for c in senha)
+
+def test_integracao_api_seed_texto_necessario():
+    #usa api random number para obter um inteiro x e gerar uma senha com o comprimento x
+    response = requests.get("https://www.randomnumberapi.com/api/v1.0/random?min=10&max=999&count=1")
+    assert response.status_code == 200
+
+    numero_para_senha = response.json()[0]
+    config = ConfiguracaoSenha(
+        comprimento=15,
+        incluir_minusculas=True,
+        incluir_maiusculas=True,
+        incluir_numeros=True,
+        texto_necessario=str(numero_para_senha)
+    )
+    senha = gerar_senha(config)
+
+    assert str(numero_para_senha) in senha
+
+def test_integracao_api_emoji_texto_necessario():
+    response = requests.get("https://www.sathishsundar.in/wp-json/emoji/v1/random")
+    assert response.status_code == 200
+
+    emoji = response.json()["emoji"]
+    config = ConfiguracaoSenha(
+        comprimento=15,
+        incluir_minusculas=True,
+        incluir_maiusculas=True,
+        incluir_numeros=True,
+        incluir_simbolos=True,
+        texto_necessario=emoji
+    )
+    senha = gerar_senha(config)
+
+    assert emoji in senha
+
+def test_integracao_arquivo_texto_necessário():
+    with tempfile.NamedTemporaryFile(mode='w+', encoding='utf-8', delete=True) as temp_file:
+        temp_file.write("I_Must_Be_In_Password_18_:)")
+        temp_file.seek(0)
+        necessario = temp_file.read()
+
+        config = ConfiguracaoSenha(comprimento=45, incluir_minusculas=True, incluir_maiusculas=True, texto_necessario=necessario)
+        senha = gerar_senha(config)
+
+        assert necessario in senha
+
+def test_integracao_api_data_texto_necessario():
+    response = requests.get(" https://api.lrs.org/random-date-generator?num_dates=1")
+    assert response.status_code == 200
+    data = list(response.json()["data"].keys())[0]
+    config = ConfiguracaoSenha(
+        comprimento=15,
+        incluir_minusculas=True,
+        incluir_maiusculas=True,
+        incluir_numeros=False,
+        incluir_simbolos=True,
+        texto_necessario=data
+    )
+    
+    senha = gerar_senha(config)
+
+    assert data in senha

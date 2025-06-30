@@ -10,13 +10,15 @@ class ConfiguracaoSenha:
                  incluir_minusculas: bool = False,
                  incluir_numeros: bool = False,
                  incluir_simbolos: bool = False,
-                 simbolos_personalizados: str | None = None):
+                 simbolos_personalizados: str | None = None,
+                 texto_necessario: str | None = None):
         self.comprimento = comprimento
         self.incluir_maiusculas = incluir_maiusculas
         self.incluir_minusculas = incluir_minusculas
         self.incluir_numeros = incluir_numeros
         self.incluir_simbolos = incluir_simbolos
         self.simbolos_personalizados = simbolos_personalizados
+        self.texto_necessario = texto_necessario
 
         if self.comprimento <= 0:
             raise ValueError("O comprimento da senha deve ser positivo.")
@@ -34,6 +36,8 @@ def gerar_senha(config: ConfiguracaoSenha) -> str:
     conjunto_caracteres_permitidos = []
     caracteres_garantidos = []
 
+    if config.texto_necessario:
+        caracteres_garantidos.append(config.texto_necessario)
     if config.incluir_minusculas:
         conjunto_caracteres_permitidos.extend(list(CARACTERES_MINUSCULOS))
         caracteres_garantidos.append(secrets.choice(CARACTERES_MINUSCULOS))
