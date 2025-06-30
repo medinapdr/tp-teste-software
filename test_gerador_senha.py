@@ -329,7 +329,7 @@ def test_cli_integracao_argumentos():
         "--numeros",
         "--simbolos"
     ]
-    resultado = subprocess.run(comando, capture_output=True, text=True)
+    resultado = subprocess.run(comando, capture_output=True, text=True, encoding='utf-8', errors='ignore')
     
     assert resultado.returncode == 0
     assert "Senha Gerada:" in resultado.stdout
