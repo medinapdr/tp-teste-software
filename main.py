@@ -10,6 +10,7 @@ if __name__ == "__main__":
     parser.add_argument("--numeros", action="store_true", help="Incluir números")
     parser.add_argument("--simbolos", action="store_true", help="Incluir símbolos padrão")
     parser.add_argument("--simbolos_custom", type=str, help="String de símbolos personalizados para usar")
+    parser.add_argument("--texto_necessario", type=str, help="String de texto que deve estar na senha")
 
     args = parser.parse_args()
 
@@ -24,7 +25,8 @@ if __name__ == "__main__":
             incluir_minusculas=args.minusculas,
             incluir_numeros=args.numeros,
             incluir_simbolos=args.simbolos,
-            simbolos_personalizados=args.simbolos_custom
+            simbolos_personalizados=args.simbolos_custom,
+            texto_necessario=args.texto_necessario
         )
         senha_gerada = gerar_senha(config)
         print("Senha Gerada:", senha_gerada)
